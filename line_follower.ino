@@ -55,10 +55,10 @@ void loop() {
 
   //if (derivative == 0) {
   //  turn += 10;
-  //} 
+  //}
 
 #ifdef DEBUG
-  Serial.print("position: "); 
+  Serial.print("position: ");
   Serial.print(position);
   Serial.print("derivative: ");
   Serial.print(derivative);
@@ -109,6 +109,11 @@ void calibrateSensors() {
   // * 10 reads per calibrate() call = ~24 ms per calibrate() call.
   // Call calibrate() 400 times to make calibration take about 10 seconds.
   for (uint16_t i = 0; i < 400; i++) {
+    if (i > 100 && i <= 300) {
+        setMotorSpeeds(-10, 10);
+    } else {
+        setMotorSpeeds(10, -10);
+    }
     qtr.calibrate();
   }
 }
