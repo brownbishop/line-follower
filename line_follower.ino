@@ -1,12 +1,12 @@
-#include <QTRSensors.h>  // Includem librăria QTRSensors
+#include <QTRSensors.h>
 
-// Definire motor
-#define motorStangaIN1 12   // Pin de control direcție pentru motorul stâng.
-#define motorStangaIN2 3    // Pin de control PWM pentru motorul stâng.
-#define motorDreaptaIN1 13  // Pin de control direcție pentru motorul drept.
-#define motorDreaptaIN2 11  // Pin de control PWM pentru motorul drept.
-#define pwmMotorStanga 3    // PWM motor stâng
-#define pwmMotorDreapta 11  // PWM motor drept
+// Motor pins
+#define leftMotorIN1 12   // Direction control pin for left motor
+#define leftMotorIN2 3    // PWM control pin for left motor
+#define rightMotorIN1 13  // Direction control pin for right motor
+#define rightMotorIN2 11  // PWM control pin for right motor
+#define pwmMotorStanga 3    // PWM left
+#define pwmMotorDreapta 11  // PWM right
 //#define DEBUG 12
 
 // Senzor de linie QTR-8RC
@@ -14,11 +14,12 @@ QTRSensors qtr;
 unsigned char sensorPins[] = { 2, 4, 5, 6, 7, 8, 9, 10 };
 unsigned int sensorValues[8];
 
-// Variabile PID
+// PID variables
 constexpr float Kp = 0.04;
 constexpr float Ki = 0.0001;
 constexpr float Kd = 0.4;
-constexpr float setpoint = 3500;  // Valoare pentru centru
+constexpr float setpoint = 3500;  // center
+
 float lastError = 0;
 float integral = 0;
 float baseSpeed = 30;
@@ -27,27 +28,25 @@ void setup() {
 #ifdef DEBUG
   Serial.begin(9600);
 #endif
-  // Setare pinii pentru motoare
-  pinMode(motorStangaIN1, OUTPUT);
-  pinMode(motorStangaIN2, OUTPUT);
-  pinMode(motorDreaptaIN1, OUTPUT);
-  pinMode(motorDreaptaIN2, OUTPUT);
 
-  // Setare tip senzori și pinii aferenți
-  qtr.setTypeRC();                   // Setăm tipul de senzor QTR-8RC
-  qtr.setSensorPins(sensorPins, 8);  // Setăm pinii senzorilor
+  pinMode(leftMotorIN1, OUTPUT);
+  pinMode(leftMotorIN2, OUTPUT);
+  pinMode(rightMotorIN1, OUTPUT);
+  pinMode(rightMotorIN2, OUTPUT);
 
-  // Calibrare senzori
+  qtr.setTypeRC();
+  qtr.setSensorPins(sensorPins, 8);
+
   calibrateSensors();
 }
 
 void loop() {
-  // Citirea valorilor senzorilor și obținerea poziției liniei negre
-  int position = qtr.readLineBlack(sensorValues);  // Citim poziția liniei negre
+  // black line position
+  int position = qtr.readLineBlack(sensorValues);
 
   float error = setpoint - position;
 
-  // Calcul PID
+  // PID computation
   float proportional = error;
   integral += error;
   float derivative = error - lastError;
@@ -68,15 +67,15 @@ void loop() {
   Serial.print(turn);
   Serial.print("\n");
 #endif
-  // Calculare viteze motoare
+
+  // Compute speed
   int leftMotorSpeed = baseSpeed + turn;
   int rightMotorSpeed = baseSpeed - turn;
 
-  // Limitare viteze motoare
+  // limit the speed else the robot goes nuts
   leftMotorSpeed = constrain(leftMotorSpeed, -50, 50);
   rightMotorSpeed = constrain(rightMotorSpeed, -50, 50);
 
-  // Setare viteze motoare
   setMotorSpeeds(leftMotorSpeed, rightMotorSpeed);
 
   lastError = error;
@@ -84,19 +83,19 @@ void loop() {
 
 void setMotorSpeeds(int leftSpeed, int rightSpeed) {
   if (leftSpeed > 0) {
-    digitalWrite(motorStangaIN1, HIGH);
-    digitalWrite(motorStangaIN2, LOW);
+    digitalWrite(leftMotorIN1, HIGH);
+    digitalWrite(leftMotorIN2, LOW);
   } else {
-    digitalWrite(motorStangaIN1, LOW);
-    digitalWrite(motorStangaIN2, HIGH);
+    digitalWrite(leftMotorIN1, LOW);
+    digitalWrite(leftMotorIN2, HIGH);
   }
 
   if (rightSpeed > 0) {
-    digitalWrite(motorDreaptaIN1, HIGH);
-    digitalWrite(motorDreaptaIN2, LOW);
+    digitalWrite(rightMotorIN1, HIGH);
+    digitalWrite(rightMotorIN2, LOW);
   } else {
-    digitalWrite(motorDreaptaIN1, LOW);
-    digitalWrite(motorDreaptaIN2, HIGH);
+    digitalWrite(rightMotorIN1, LOW);
+    digitalWrite(rightMotorIN2, HIGH);
   }
 
   analogWrite(pwmMotorStanga, abs(leftSpeed));
@@ -109,10 +108,12 @@ void calibrateSensors() {
   // * 10 reads per calibrate() call = ~24 ms per calibrate() call.
   // Call calibrate() 400 times to make calibration take about 10 seconds.
   for (uint16_t i = 0; i < 400; i++) {
-    if (i > 100 && i <= 300) {
-        setMotorSpeeds(-10, 10);
+    uint16_t i0 = i % 100;
+    int turnSpeed = 30;
+    if (i > 25 && i <= 75) {
+        setMotorSpeeds(-turnSpeed, turnSpeed);
     } else {
-        setMotorSpeeds(10, -10);
+        setMotorSpeeds(turnSpeed, -turnSpeed);
     }
     qtr.calibrate();
   }
