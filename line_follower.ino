@@ -48,9 +48,9 @@ void loop() {
 
   // PID computation
   float proportional = error;
-  integral += error;
+  // integral += error;
   float derivative = error - lastError;
-  float turn = Kp * proportional + Ki * integral + Kd * derivative;
+  float turn = Kp * proportional + Kd * derivative;
 
   //if (derivative == 0) {
   //  turn += 10;
@@ -103,18 +103,19 @@ void setMotorSpeeds(int leftSpeed, int rightSpeed) {
 }
 
 void calibrateSensors() {
-  // analogRead() takes about 0.1 ms on an AVR.
-  // 0.1 ms per sensor * 4 samples per sensor read (default) * 6 sensors
-  // * 10 reads per calibrate() call = ~24 ms per calibrate() call.
   // Call calibrate() 400 times to make calibration take about 10 seconds.
-  for (uint16_t i = 0; i < 400; i++) {
-    uint16_t i0 = i % 100;
-    int turnSpeed = 30;
-    if (i > 25 && i <= 75) {
-        setMotorSpeeds(-turnSpeed, turnSpeed);
-    } else {
-        setMotorSpeeds(turnSpeed, -turnSpeed);
-    }
+  int turnSpeed = 30;
+  setMotorSpeed(turnSpeed, -turnSpeed);
+  delay(50);
+  for (uint16_t i = 0; i < 9; i++) {
+    turnSpeed = -turnSpeed;
+    setMotorSpeeds(turnSpeed, -turnSpeed);
     qtr.calibrate();
+    delay(100);
   }
+
+  turnSpeed = -turnSpeed;
+  setMotorSpeeds(turnSpeed, -turnSpeed);
+  delay(50);
+  setMotorSpeeds(0, 0);
 }
